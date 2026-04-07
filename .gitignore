@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Datasets (Keep your data local!)
+*.csv
+*.xlsx
+*.json
+data/
+raw_data/
+
+# MLflow Tracking
+mlruns/
+mlartifacts/
+
+# Sweetviz Reports
+*sweetviz_report.html
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDEs
+.vscode/
+.idea/
+
+# Environment Variables (Secrets like API keys)
+.env
+
+# ds store
+.DS_Store
