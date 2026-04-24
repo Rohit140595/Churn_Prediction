@@ -27,11 +27,13 @@ def cross_validate_model(
     numerical_features: list[str],
     categorical_features: list[str],
     cv: int = 5,
+    selector: Optional[Any] = None,
 ) -> dict[str, np.ndarray]:
     """Run stratified k-fold cross-validation with preprocessing inside each fold.
 
-    Wraps the preprocessor and estimator in an sklearn ``Pipeline`` so that
-    scaling and encoding are re-fit on each training fold, preventing leakage.
+    Wraps the preprocessor (and optional selector) with the estimator in an
+    sklearn ``Pipeline`` so that all fitting steps are re-applied on each
+    training fold, preventing leakage.
 
     Parameters
     ----------
@@ -47,6 +49,9 @@ def cross_validate_model(
         Columns to pass through ``OneHotEncoder``.
     cv : int, optional
         Number of stratified folds, by default 5.
+    selector : sklearn transformer, optional
+        Unfitted feature selector (e.g. from ``build_selector``). Inserted
+        between the preprocessor and the model when provided.
 
     Returns
     -------
@@ -57,7 +62,12 @@ def cross_validate_model(
     from src.data.preprocessor import build_preprocessor
 
     preprocessor = build_preprocessor(numerical_features, categorical_features)
-    pipe = SKPipeline([("preprocessor", preprocessor), ("model", estimator)])
+    steps: list[tuple[str, Any]] = [("preprocessor", preprocessor)]
+    if selector is not None:
+        steps.append(("selector", selector))
+    steps.append(("model", estimator))
+
+    pipe = SKPipeline(steps)
     cv_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
     scores = sk_cross_validate(
         pipe,

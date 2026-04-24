@@ -25,7 +25,8 @@ def parse_args() -> argparse.Namespace:
     Returns
     -------
     argparse.Namespace
-        Parsed arguments with ``model``, ``experiment_name``, and ``no_tracking``.
+        Parsed arguments with ``model``, ``feature_selection``,
+        ``feature_selection_k``, ``experiment_name``, and ``no_tracking``.
     """
     parser = argparse.ArgumentParser(description="Train a churn prediction model.")
     parser.add_argument(
@@ -33,6 +34,18 @@ def parse_args() -> argparse.Namespace:
         choices=list(DEFAULT_PARAMS.keys()),
         default="xgboost",
         help="Model architecture to train (default: xgboost).",
+    )
+    parser.add_argument(
+        "--feature-selection",
+        choices=["importance", "kbest"],
+        default=None,
+        help="Feature selection strategy (default: none).",
+    )
+    parser.add_argument(
+        "--feature-selection-k",
+        type=int,
+        default=10,
+        help="Features to keep when --feature-selection=kbest (default: 10).",
     )
     parser.add_argument(
         "--experiment-name",
@@ -51,12 +64,22 @@ def main() -> None:
     """Run training and print metrics to stdout."""
     args = parse_args()
 
-    print(f"Training model: {args.model}")
+    print(f"Training model  : {args.model}")
+    if args.feature_selection:
+        print(f"Feature selection: {args.feature_selection}" + (
+            f" (k={args.feature_selection_k})" if args.feature_selection == "kbest" else ""
+        ))
+
     result = run_pipeline(
         model_name=args.model,
+        feature_selection=args.feature_selection,
+        feature_selection_k=args.feature_selection_k,
         experiment_name=args.experiment_name,
         track=not args.no_tracking,
     )
+
+    if result["n_features_selected"] is not None:
+        print(f"Features selected: {result['n_features_selected']}")
 
     print("\nCross-validation (5-fold, mean ± std):")
     for name, scores in result["cv_results"].items():
