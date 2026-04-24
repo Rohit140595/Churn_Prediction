@@ -15,7 +15,8 @@ Binary classification project predicting whether a bank customer will churn, usi
 │   │   ├── loader.py           load_raw_data()
 │   │   └── preprocessor.py     split_and_preprocess() — leakage-free
 │   ├── features/
-│   │   └── engineer.py         feature engineering (BalancePerProduct, ActiveProducts)
+│   │   ├── engineer.py         feature engineering (BalancePerProduct, ActiveProducts)
+│   │   └── selector.py         build_selector() — importance or kbest strategies
 │   ├── models/
 │   │   ├── base.py             BaseModel ABC
 │   │   ├── logistic.py         LogisticRegressionModel
@@ -50,10 +51,23 @@ python scripts/train.py --model logistic
 python scripts/train.py --model random_forest
 python scripts/train.py --model xgboost
 
+# Feature selection
+python scripts/train.py --model xgboost --feature-selection importance
+python scripts/train.py --model xgboost --feature-selection kbest --feature-selection-k 8
+
 # Custom experiment name or disable tracking
 python scripts/train.py --model xgboost --experiment-name my_experiment
 python scripts/train.py --model xgboost --no-tracking
 ```
+
+### Feature selection strategies
+
+| Strategy | Mechanism | Features kept |
+|---|---|---|
+| `importance` | `SelectFromModel` (RandomForest, threshold=mean) | Data-driven |
+| `kbest` | `SelectKBest` (ANOVA F-score, top k) | Fixed via `--feature-selection-k` |
+
+Selection is applied inside each CV fold and on the final train/test split — no leakage.
 
 Output includes 5-fold cross-validation scores and final held-out test metrics:
 
@@ -88,10 +102,13 @@ from src.pipeline import run_pipeline
 result = run_pipeline(
     model_name="xgboost",
     params={"n_estimators": 300, "learning_rate": 0.03},
+    feature_selection="kbest",
+    feature_selection_k=8,
     track=False,
 )
 print(result["metrics"])
-print(result["cv_results"])  # per-fold arrays
+print(result["cv_results"])        # per-fold arrays
+print(result["n_features_selected"])  # int or None
 ```
 
 ## Models
