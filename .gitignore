@@ -36,3 +36,6 @@ mlartifacts/
 
 # ds store
 .DS_Store
+
+# Claude
+.claude
