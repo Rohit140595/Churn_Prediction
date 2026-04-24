@@ -26,6 +26,14 @@ NUMERICAL_FEATURES: list[str] = [
 ]
 CATEGORICAL_FEATURES: list[str] = ["Geography", "Gender"]
 
+# --- Business assumptions (fictional, adjust to match real unit economics) ---
+# Revenue saved per customer successfully retained (e.g. annual account margin)
+REVENUE_PER_RETAINED_CUSTOMER: float = 800.0
+# Cost of one outreach intervention (call, discount, retention offer)
+COST_PER_OUTREACH: float = 50.0
+# Probability that an intervention actually retains an at-risk customer
+RETENTION_SUCCESS_RATE: float = 0.30
+
 DEFAULT_PARAMS: dict[str, dict] = {
     "logistic": {"C": 1.0, "max_iter": 1000, "solver": "lbfgs"},
     "random_forest": {"n_estimators": 200, "max_depth": 8, "min_samples_leaf": 10},

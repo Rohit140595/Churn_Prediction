@@ -89,6 +89,18 @@ def main() -> None:
     for name, value in result["metrics"].items():
         print(f"  {name:12s}: {value:.4f}")
 
+    rd = result["roi_default"]
+    ro = result["roi_optimal"]
+    print("\nCampaign ROI (assumptions: "
+          f"${rd['outreach_cost'] / max(rd['tp'] + rd['fp'], 1):.0f}/outreach, "
+          f"$800 revenue/retained, 30% success rate):")
+    print(f"  threshold=0.50 : {rd['campaign_roi_pct']:+.1f}%  "
+          f"(contacted {int(rd['tp'] + rd['fp'])}, "
+          f"net ${rd['net_value'] - rd['outreach_cost']:,.0f})")
+    print(f"  optimal={ro['threshold']:.2f}   : {ro['campaign_roi_pct']:+.1f}%  "
+          f"(contacted {int(ro['tp'] + ro['fp'])}, "
+          f"net ${ro['net_value'] - ro['outreach_cost']:,.0f})")
+
     if result["run_id"]:
         print(f"\nMLflow run ID : {result['run_id']}")
         print("View results  : mlflow ui")

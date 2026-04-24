@@ -24,7 +24,8 @@ Binary classification project predicting whether a bank customer will churn, usi
 │   │   ├── xgboost_model.py    XGBoostModel
 │   │   └── registry.py         get_model(name) factory
 │   ├── evaluation/
-│   │   └── metrics.py          compute_metrics(), cross_validate_model(), plot helpers
+│   │   ├── metrics.py          compute_metrics(), cross_validate_model(), plot helpers
+│   │   └── business_metrics.py compute_campaign_roi(), find_optimal_threshold(), plot_roi_curve()
 │   ├── tracking/
 │   │   └── mlflow_tracker.py   MLflow experiment logging
 │   └── pipeline.py             run_pipeline() end-to-end orchestrator
@@ -69,7 +70,7 @@ python scripts/train.py --model xgboost --no-tracking
 
 Selection is applied inside each CV fold and on the final train/test split — no leakage.
 
-Output includes 5-fold cross-validation scores and final held-out test metrics:
+Output includes 5-fold cross-validation scores, final held-out test metrics, and campaign ROI:
 
 ```
 Cross-validation (5-fold, mean ± std):
@@ -85,6 +86,10 @@ Test-set metrics:
   f1          : 0.6058
   precision   : 0.7960
   recall      : 0.4889
+
+Campaign ROI (assumptions: $50/outreach, $800 revenue/retained, 30% success rate):
+  threshold=0.50 : +282.1%  (contacted 250, net $35,260)
+  optimal=0.90   : +372.1%  (contacted 61, net $11,350)
 ```
 
 ## MLflow
@@ -107,9 +112,27 @@ result = run_pipeline(
     track=False,
 )
 print(result["metrics"])
-print(result["cv_results"])        # per-fold arrays
+print(result["cv_results"])           # per-fold arrays
 print(result["n_features_selected"])  # int or None
+print(result["roi_default"])          # ROI dict at threshold=0.5
+print(result["roi_optimal"])          # ROI dict at optimal threshold
 ```
+
+## Campaign ROI
+
+A pseudo business metric that frames model value in terms of a retention campaign:
+
+- **Revenue per retained customer**: $800 (fictional annual account margin)
+- **Cost per outreach**: $50 (call, discount, or retention offer)
+- **Retention success rate**: 30% (probability intervention works)
+
+```
+net_value     = TP × success_rate × revenue_per_retained
+outreach_cost = (TP + FP) × cost_per_outreach
+campaign_roi  = (net_value − outreach_cost) / outreach_cost × 100
+```
+
+The pipeline reports ROI at the default threshold (0.5) and at the threshold that maximises ROI. All assumptions are configurable in `src/config.py`.
 
 ## Models
 

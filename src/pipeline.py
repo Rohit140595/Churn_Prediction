@@ -3,6 +3,7 @@ from typing import Any, Optional
 from src.config import CATEGORICAL_FEATURES, DEFAULT_PARAMS, NUMERICAL_FEATURES, TARGET_COL
 from src.data.loader import load_raw_data
 from src.data.preprocessor import split_and_preprocess
+from src.evaluation.business_metrics import compute_campaign_roi, find_optimal_threshold
 from src.evaluation.metrics import compute_metrics, cross_validate_model
 from src.features.engineer import add_features
 from src.models.base import BaseModel
@@ -52,6 +53,8 @@ def run_pipeline(
         - ``preprocessor`` : ColumnTransformer — fitted preprocessor.
         - ``selector`` : sklearn transformer or None — fitted feature selector.
         - ``n_features_selected`` : int or None — features kept after selection.
+        - ``roi_default`` : dict[str, float] — campaign ROI at threshold=0.5.
+        - ``roi_optimal`` : dict[str, float] — campaign ROI at the ROI-maximising threshold.
         - ``run_id`` : str or None — MLflow run ID (``None`` if ``track=False``).
     """
     from src.features.selector import build_selector
@@ -100,12 +103,22 @@ def run_pipeline(
         int(selector.get_support().sum()) if selector is not None else None
     )
 
+    roi_default = compute_campaign_roi(y_test, y_proba, threshold=0.5)
+    optimal_threshold, roi_optimal = find_optimal_threshold(y_test, y_proba)
+
     if track:
         track_params = {**model_params}
         if feature_selection:
             track_params["feature_selection"] = feature_selection
             track_params["n_features_selected"] = n_features_selected
-        run_id = log_experiment(model_name, track_params, metrics, model._model, experiment_name)
+        roi_metrics = {
+            "roi_default_pct": roi_default["campaign_roi_pct"],
+            "roi_optimal_pct": roi_optimal["campaign_roi_pct"],
+            "optimal_threshold": optimal_threshold,
+        }
+        run_id = log_experiment(
+            model_name, track_params, {**metrics, **roi_metrics}, model._model, experiment_name
+        )
     else:
         run_id = None
 
@@ -116,5 +129,7 @@ def run_pipeline(
         "preprocessor": preprocessor,
         "selector": selector,
         "n_features_selected": n_features_selected,
+        "roi_default": roi_default,
+        "roi_optimal": roi_optimal,
         "run_id": run_id,
     }
