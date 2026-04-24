@@ -5,6 +5,8 @@ from src.models.logistic import LogisticRegressionModel
 from src.models.random_forest import RandomForestModel
 from src.models.xgboost_model import XGBoostModel
 
+# Maps CLI/config model names to their concrete BaseModel classes.
+# Add a new entry here to make a model available throughout the pipeline.
 MODEL_REGISTRY: dict[str, type[BaseModel]] = {
     "logistic": LogisticRegressionModel,
     "random_forest": RandomForestModel,

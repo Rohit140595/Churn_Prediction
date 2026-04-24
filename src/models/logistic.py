@@ -29,6 +29,7 @@ class LogisticRegressionModel(BaseModel):
         solver: str = DEFAULT_PARAMS["logistic"]["solver"],
         random_state: int = RANDOM_STATE,
     ) -> None:
+        # Store params for get_params() and so the tuner/tracker can inspect them via _params.
         self._params: dict[str, Any] = {
             "C": C,
             "max_iter": max_iter,

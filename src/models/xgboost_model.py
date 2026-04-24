@@ -20,6 +20,8 @@ class XGBoostModel(BaseModel):
         Step size shrinkage used in each boosting step.
     subsample : float, optional
         Fraction of training samples used per tree.
+    colsample_bytree : float, optional
+        Fraction of features sampled per tree.
     random_state : int, optional
         Random seed for reproducibility.
     """
@@ -30,15 +32,20 @@ class XGBoostModel(BaseModel):
         max_depth: int = DEFAULT_PARAMS["xgboost"]["max_depth"],
         learning_rate: float = DEFAULT_PARAMS["xgboost"]["learning_rate"],
         subsample: float = DEFAULT_PARAMS["xgboost"]["subsample"],
+        colsample_bytree: float = DEFAULT_PARAMS["xgboost"]["colsample_bytree"],
         random_state: int = RANDOM_STATE,
     ) -> None:
+        # Store params for get_params() and so the tuner/tracker can inspect them via _params.
         self._params: dict[str, Any] = {
             "n_estimators": n_estimators,
             "max_depth": max_depth,
             "learning_rate": learning_rate,
             "subsample": subsample,
+            "colsample_bytree": colsample_bytree,
             "random_state": random_state,
         }
+        # eval_metric must be set explicitly — XGBoost 2.0 changed the default and
+        # prints a noisy warning on every fit if it is not provided.
         self._model = XGBClassifier(**self._params, eval_metric="logloss")
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "XGBoostModel":

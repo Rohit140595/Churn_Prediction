@@ -13,7 +13,7 @@ Binary classification project predicting whether a bank customer will churn, usi
 │   ├── config.py               paths, constants, default hyperparameters
 │   ├── data/
 │   │   ├── loader.py           load_raw_data()
-│   │   └── preprocessor.py     split_and_preprocess() — leakage-free
+│   │   └── preprocessor.py     split_data(), preprocess() — leakage-free
 │   ├── features/
 │   │   ├── engineer.py         feature engineering (BalancePerProduct, ActiveProducts)
 │   │   └── selector.py         build_selector() — importance or kbest strategies
@@ -24,8 +24,10 @@ Binary classification project predicting whether a bank customer will churn, usi
 │   │   ├── xgboost_model.py    XGBoostModel
 │   │   └── registry.py         get_model(name) factory
 │   ├── evaluation/
-│   │   ├── metrics.py          compute_metrics(), cross_validate_model(), plot helpers
+│   │   ├── metrics.py          compute_metrics(), plot helpers
 │   │   └── business_metrics.py compute_campaign_roi(), find_optimal_threshold(), plot_roi_curve()
+│   ├── tuning/
+│   │   └── tuner.py            tune() — Optuna hyperparameter search (3-fold CV)
 │   ├── tracking/
 │   │   └── mlflow_tracker.py   MLflow experiment logging
 │   └── pipeline.py             run_pipeline() end-to-end orchestrator
@@ -44,22 +46,29 @@ pip install -r requirements.txt
 ## Training
 
 ```bash
-# Train with default hyperparameters (XGBoost) and MLflow tracking
-python scripts/train.py
-
-# Choose a model
-python scripts/train.py --model logistic
-python scripts/train.py --model random_forest
+# Default hyperparameters
 python scripts/train.py --model xgboost
 
-# Feature selection
+# With Optuna hyperparameter tuning
+python scripts/train.py --model xgboost --tune --n-trials 50
+
+# With feature selection
 python scripts/train.py --model xgboost --feature-selection importance
 python scripts/train.py --model xgboost --feature-selection kbest --feature-selection-k 8
 
-# Custom experiment name or disable tracking
-python scripts/train.py --model xgboost --experiment-name my_experiment
+# Disable MLflow tracking
 python scripts/train.py --model xgboost --no-tracking
 ```
+
+### Hyperparameter tuning
+
+When `--tune` is set, Optuna runs a TPE search over the model's hyperparameter space using 3-fold stratified CV on the training split. The test set is never seen during tuning.
+
+| Model | Search space |
+|---|---|
+| Logistic | `C` (log-uniform 1e-3–100) |
+| Random Forest | `n_estimators`, `max_depth`, `min_samples_leaf` |
+| XGBoost | `n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree` |
 
 ### Feature selection strategies
 
@@ -68,28 +77,30 @@ python scripts/train.py --model xgboost --no-tracking
 | `importance` | `SelectFromModel` (RandomForest, threshold=mean) | Data-driven |
 | `kbest` | `SelectKBest` (ANOVA F-score, top k) | Fixed via `--feature-selection-k` |
 
-Selection is applied inside each CV fold and on the final train/test split — no leakage.
-
-Output includes 5-fold cross-validation scores, final held-out test metrics, and campaign ROI:
+## Sample output
 
 ```
-Cross-validation (5-fold, mean ± std):
-  accuracy    : 0.8645 ± 0.0045
-  roc_auc     : 0.8663 ± 0.0048
-  f1          : 0.5939 ± 0.0180
-  precision   : 0.7621 ± 0.0153
-  recall      : 0.4870 ± 0.0226
+Model           : xgboost
+Tuning          : Optuna (20 trials, 3-fold CV)
+
+Best CV ROC-AUC : 0.8647
+Best params     :
+  n_estimators: 404
+  max_depth: 4
+  learning_rate: 0.0188
+  subsample: 0.796
+  colsample_bytree: 0.523
 
 Test-set metrics:
-  accuracy    : 0.8705
-  roc_auc     : 0.8649
-  f1          : 0.6058
-  precision   : 0.7960
-  recall      : 0.4889
+  accuracy    : 0.8675
+  roc_auc     : 0.8721
+  f1          : 0.5904
+  precision   : 0.7958
+  recall      : 0.4693
 
 Campaign ROI (assumptions: $50/outreach, $800 revenue/retained, 30% success rate):
-  threshold=0.50 : +282.1%  (contacted 250, net $35,260)
-  optimal=0.90   : +372.1%  (contacted 61, net $11,350)
+  threshold=0.50 : +282.0%  (contacted 240, net $33,840)
+  optimal=0.88   : +380.0%  (contacted 52, net $9,880)
 ```
 
 ## MLflow
@@ -104,6 +115,10 @@ mlflow ui
 ```python
 from src.pipeline import run_pipeline
 
+# With tuning
+result = run_pipeline(model_name="xgboost", tune=True, n_trials=50, track=False)
+
+# With manual params
 result = run_pipeline(
     model_name="xgboost",
     params={"n_estimators": 300, "learning_rate": 0.03},
@@ -111,8 +126,10 @@ result = run_pipeline(
     feature_selection_k=8,
     track=False,
 )
+
 print(result["metrics"])
-print(result["cv_results"])           # per-fold arrays
+print(result["best_params"])          # hyperparameters used
+print(result["best_cv_score"])        # Optuna best ROC-AUC (None if tune=False)
 print(result["n_features_selected"])  # int or None
 print(result["roi_default"])          # ROI dict at threshold=0.5
 print(result["roi_optimal"])          # ROI dict at optimal threshold
@@ -132,7 +149,7 @@ outreach_cost = (TP + FP) × cost_per_outreach
 campaign_roi  = (net_value − outreach_cost) / outreach_cost × 100
 ```
 
-The pipeline reports ROI at the default threshold (0.5) and at the threshold that maximises ROI. All assumptions are configurable in `src/config.py`.
+The pipeline reports ROI at the default threshold (0.5) and at the ROI-maximising threshold. All assumptions are configurable in `src/config.py`.
 
 ## Models
 
@@ -140,6 +157,7 @@ The pipeline reports ROI at the default threshold (0.5) and at the threshold tha
 |---|---|---|---|
 | Logistic Regression | 0.8145 | 0.7699 | 0.317 |
 | Random Forest | 0.8640 | 0.8667 | 0.585 |
-| XGBoost | 0.8705 | 0.8649 | 0.606 |
+| XGBoost (default) | 0.8705 | 0.8649 | 0.606 |
+| XGBoost (tuned, 20 trials) | 0.8675 | 0.8721 | 0.590 |
 
-*Results on a single 80/20 stratified split with default hyperparameters.*
+*Results on a single 80/20 stratified split.*

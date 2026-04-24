@@ -54,14 +54,21 @@ def compute_campaign_roi(
         ``outreach_cost``, ``campaign_roi_pct``.
     """
     if y_proba.ndim == 2:
-        y_proba = y_proba[:, 1]
+        y_proba = y_proba[:, 1]  # extract positive-class (churn) probabilities
 
+    # Apply threshold to convert probabilities to binary predictions
     y_pred = (y_proba >= threshold).astype(int)
+
+    # Count true positives (correctly flagged churners) and false positives (wrong alerts)
     tp = float(((y_pred == 1) & (y_true == 1)).sum())
     fp = float(((y_pred == 1) & (y_true == 0)).sum())
 
+    # Revenue from retaining true churners × assumed intervention success rate
     net_value = tp * retention_success_rate * revenue_per_retained
+    # Every contacted customer (TP + FP) incurs an outreach cost
     outreach_cost = (tp + fp) * cost_per_outreach
+    # Guard: if threshold is so high that nothing is predicted positive,
+    # outreach_cost is 0 and the division is undefined — return 0 instead.
     campaign_roi_pct = (
         (net_value - outreach_cost) / outreach_cost * 100
         if outreach_cost > 0
@@ -113,6 +120,8 @@ def find_optimal_threshold(
         :func:`compute_campaign_roi` at the optimal threshold.
     """
     if thresholds is None:
+        # Avoid 0 and 1: at those extremes all/no customers are predicted positive,
+        # making ROI degenerate and uninformative for threshold selection.
         thresholds = np.linspace(0.05, 0.95, 100)
 
     best_threshold = 0.5

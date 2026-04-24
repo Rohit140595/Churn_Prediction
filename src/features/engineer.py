@@ -21,7 +21,13 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         New DataFrame with added feature columns. Input is not modified.
     """
-    df = df.copy()
+    df = df.copy()  # avoid mutating the caller's DataFrame
+
+    # clip(lower=1) guards against division by zero; NumOfProducts should always be ≥1
+    # in this dataset but the guard makes the function safe for future data.
     df["BalancePerProduct"] = df["Balance"] / df["NumOfProducts"].clip(lower=1)
+
+    # Interaction term: zero for inactive members regardless of product count,
+    # capturing that inactive high-product customers may still churn.
     df["ActiveProducts"] = df["IsActiveMember"] * df["NumOfProducts"]
     return df

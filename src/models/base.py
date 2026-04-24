@@ -9,7 +9,9 @@ class BaseModel(ABC):
 
     All concrete models must implement ``fit``, ``predict``,
     ``predict_proba``, and ``get_params``. The underlying sklearn-compatible
-    estimator must be stored as ``self._model`` so the tracker can log it.
+    estimator must be stored as ``self._model`` — both the MLflow tracker
+    (to log the artifact) and the Optuna tuner (to extract it for
+    cross_val_score) access it by that name.
     """
 
     @abstractmethod

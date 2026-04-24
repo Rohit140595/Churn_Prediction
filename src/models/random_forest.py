@@ -29,6 +29,7 @@ class RandomForestModel(BaseModel):
         min_samples_leaf: int = DEFAULT_PARAMS["random_forest"]["min_samples_leaf"],
         random_state: int = RANDOM_STATE,
     ) -> None:
+        # Store params for get_params() and so the tuner/tracker can inspect them via _params.
         self._params: dict[str, Any] = {
             "n_estimators": n_estimators,
             "max_depth": max_depth,

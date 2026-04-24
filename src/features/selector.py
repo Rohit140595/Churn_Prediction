@@ -47,10 +47,13 @@ def build_selector(
         If ``strategy`` is not one of the supported values.
     """
     if strategy == "importance":
+        # threshold="mean" keeps features above the average importance rather than a
+        # fixed cutoff, so the number of selected features adapts to the data.
         return SelectFromModel(
             RandomForestClassifier(n_estimators=100, random_state=random_state),
             threshold="mean",
         )
     if strategy == "kbest":
+        # f_classif computes ANOVA F-scores — suitable for numerical features vs a binary target.
         return SelectKBest(f_classif, k=k)
     raise ValueError(f"Unknown strategy '{strategy}'. Choose one of {STRATEGIES}.")
