@@ -33,6 +33,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - `.gitignore` — added `models_output/*.joblib` so the artifact is excluded but the directory is tracked (required for the Docker build context)
+- `pyproject.toml` — added `[tool.ruff]`, `[tool.mypy]`, and `[tool.pytest.ini_options]` config sections
+- `README.md` — added Development section with test, lint, and CI/CD instructions; updated project structure tree with `tests/`, `.github/workflows/`, and `requirements-dev.txt`
 
 ---
 
