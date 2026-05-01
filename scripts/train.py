@@ -8,6 +8,9 @@ From the project root::
     python scripts/train.py --model xgboost --tune --n-trials 50
     python scripts/train.py --model xgboost --feature-selection importance
     python scripts/train.py --model xgboost --experiment-name my_exp --no-tracking
+
+    # Train and save the artifact for serving
+    python scripts/train.py --model xgboost --save-model
 """
 
 import argparse
@@ -68,6 +71,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable MLflow tracking.",
     )
+    parser.add_argument(
+        "--save-model",
+        action="store_true",
+        help=(
+            "Serialise the trained artifact (preprocessor + selector + model) "
+            "to models_output/churn_model.joblib for use by the serving layer."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -92,6 +103,7 @@ def main() -> None:
         n_trials=args.n_trials,
         experiment_name=args.experiment_name,
         track=not args.no_tracking,
+        save_model=args.save_model,
     )
 
     if args.tune:
@@ -122,6 +134,10 @@ def main() -> None:
     if result["run_id"]:
         print(f"\nMLflow run ID : {result['run_id']}")
         print("View results  : mlflow ui")
+
+    if result["artifact_path"]:
+        print(f"\nArtifact saved : {result['artifact_path']}")
+        print("Start server   : uvicorn src.serving.app:app --port 8000")
 
 
 if __name__ == "__main__":

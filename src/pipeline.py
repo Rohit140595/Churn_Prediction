@@ -20,6 +20,7 @@ def run_pipeline(
     n_trials: int = 50,
     experiment_name: str = "churn_prediction",
     track: bool = True,
+    save_model: bool = False,
 ) -> dict[str, Any]:
     """Run the end-to-end training and evaluation pipeline.
 
@@ -45,6 +46,10 @@ def run_pipeline(
         MLflow experiment name, by default ``"churn_prediction"``.
     track : bool, optional
         Whether to log the run to MLflow, by default ``True``.
+    save_model : bool, optional
+        Whether to serialise the inference artifact (preprocessor + selector +
+        model) to ``MODEL_ARTIFACT_PATH`` after training, by default ``False``.
+        Enable this flag to produce a file that the serving layer can load.
 
     Returns
     -------
@@ -61,6 +66,7 @@ def run_pipeline(
         - ``roi_default`` : dict[str, float] — campaign ROI at threshold=0.5.
         - ``roi_optimal`` : dict[str, float] — campaign ROI at the ROI-maximising threshold.
         - ``run_id`` : str or None — MLflow run ID (``None`` if ``track=False``).
+        - ``artifact_path`` : str or None — path of the saved joblib artifact (``None`` if ``save_model=False``).
     """
     from src.features.selector import build_selector
 
@@ -138,6 +144,16 @@ def run_pipeline(
     else:
         run_id = None
 
+    # --- Step 10: Save inference artifact (optional) ---
+    artifact_path: Optional[str] = None
+    if save_model:
+        from src.serving.model_store import build_artifact, save_artifact
+        artifact = build_artifact(
+            {"model": model, "preprocessor": preprocessor, "selector": selector, "metrics": metrics},
+            model_name=model_name,
+        )
+        artifact_path = str(save_artifact(artifact))
+
     return {
         "metrics": metrics,
         "model": model,
@@ -149,4 +165,5 @@ def run_pipeline(
         "roi_default": roi_default,
         "roi_optimal": roi_optimal,
         "run_id": run_id,
+        "artifact_path": artifact_path,
     }

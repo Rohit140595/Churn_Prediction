@@ -6,6 +6,35 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased] — v0.4.0
+
+> Branch: `feat/model-packaging` | PRs: #4 (pending)
+
+### Added
+
+- **Pydantic request/response schemas** (`src/serving/schema.py`) — `CustomerFeatures` validates all 10 raw input fields with type checks and value-range constraints; `PredictionResponse`, `ModelInfo`, and `HealthResponse` define the API output contracts.
+- **Inference artifact store** (`src/serving/model_store.py`) — `build_artifact()` bundles preprocessor + selector + model + metadata into a single dict; `save_artifact()` / `load_artifact()` persist it as a `joblib` file under `models_output/churn_model.joblib`. Bundling all components prevents version skew between retraining runs.
+- **FastAPI inference server** (`src/serving/app.py`) — three endpoints:
+  - `GET /health` — liveness check; safe to use as a container health probe.
+  - `GET /model-info` — returns model name, version, training timestamp, feature list, threshold, and test metrics.
+  - `POST /predict` — accepts a validated customer record, runs feature engineering → preprocessing → (selection) → inference, returns `churn_probability` and `will_churn`.
+- **`--save-model` CLI flag** (`scripts/train.py`) — serialises the artifact after training; prints the artifact path and server start command.
+- **`pyproject.toml`** — makes the `src` package installable as `churn-prediction`; eliminates the `sys.path` hack needed when running outside the project root.
+- **`Dockerfile`** — Python 3.11-slim base; dependencies installed before source copy to maximise layer cache hits; model artifact mounted as a volume at runtime (not baked in).
+- **`.dockerignore`** — excludes `data/`, `models_output/`, `mlruns/`, `venv/`, and analysis files from the build context.
+
+### Changed
+
+- `src/pipeline.py` — added `save_model: bool = False` parameter and Step 10 that calls `build_artifact` + `save_artifact`; return dict now includes `artifact_path`.
+- `src/config.py` — added `MODEL_ARTIFACT_PATH = MODELS_OUTPUT_DIR / "churn_model.joblib"`.
+- `requirements.txt` — added `fastapi==0.110.3`, `uvicorn[standard]==0.29.0`, `pydantic==2.7.1`, `joblib==1.4.0`.
+
+### Security note
+
+The server speaks plain HTTP. It must be deployed behind an HTTPS-terminating reverse proxy or load balancer. See `Dockerfile` and `README` for details.
+
+---
+
 ## [Unreleased] — v0.3.0
 
 > Branch: `feat/feature-selection` | PRs: #3 (pending)

@@ -6,6 +6,8 @@ DATA_DIR = ROOT_DIR / "data"
 MODELS_OUTPUT_DIR = ROOT_DIR / "models_output"
 
 RAW_DATA_PATH = DATA_DIR / "Churn_Modelling.csv"
+# Single joblib file that bundles preprocessor + selector + model + metadata.
+MODEL_ARTIFACT_PATH = MODELS_OUTPUT_DIR / "churn_model.joblib"
 
 # --- Dataset constants ---
 TARGET_COL = "Exited"
