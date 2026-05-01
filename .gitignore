@@ -13,8 +13,8 @@ env/
 *.csv
 *.xlsx
 *.json
-data/
-raw_data/
+/data/
+/raw_data/
 
 # MLflow Tracking
 mlruns/
