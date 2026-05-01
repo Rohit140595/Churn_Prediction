@@ -1,6 +1,5 @@
 """Tests for src/serving/model_store.py."""
 
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest

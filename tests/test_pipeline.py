@@ -6,8 +6,6 @@ required — CI can run these without any data files present.
 
 from unittest.mock import patch
 
-import pytest
-
 from src.pipeline import run_pipeline
 
 

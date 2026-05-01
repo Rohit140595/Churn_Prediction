@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.serving.schema import CustomerFeatures, HealthResponse, ModelInfo, PredictionResponse
+from src.serving.schema import CustomerFeatures, HealthResponse, PredictionResponse
 
 # ---------------------------------------------------------------------------
 # Valid baseline payload — reused across multiple tests
