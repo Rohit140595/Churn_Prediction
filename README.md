@@ -35,8 +35,20 @@ Binary classification project predicting whether a bank customer will churn, usi
 │   └── pipeline.py             run_pipeline() end-to-end orchestrator
 ├── scripts/
 │   └── train.py                CLI entry point
+├── .github/
+│   └── workflows/
+│       ├── ci.yml              CI — lint, type-check, tests, Docker build on every PR
+│       └── cd.yml              CD — build and push image to ghcr.io on merge to main
+├── tests/
+│   ├── conftest.py             shared fixtures (synthetic DataFrame, no CSV needed)
+│   ├── test_schema.py          Pydantic validation tests
+│   ├── test_engineer.py        feature engineering tests
+│   ├── test_selector.py        feature selector tests
+│   ├── test_model_store.py     artifact save/load tests
+│   └── test_pipeline.py        end-to-end pipeline tests (mocked data)
 ├── Dockerfile                  container definition for the inference server
-├── pyproject.toml              package metadata (makes src/ installable)
+├── pyproject.toml              package metadata, ruff/mypy/pytest config
+├── requirements-dev.txt        dev dependencies (pytest, ruff, mypy)
 └── CHANGELOG.md                versioned change history
 ```
 
@@ -45,10 +57,12 @@ Binary classification project predicting whether a bank customer will churn, usi
 ```bash
 python -m venv venv
 source venv/bin/activate
+
+# Runtime dependencies
 pip install -r requirements.txt
 
-# Optional: install as an editable package (removes sys.path dependency)
-pip install -e .
+# Dev dependencies (testing, linting, type checking)
+pip install -r requirements-dev.txt
 ```
 
 ## Training
@@ -162,6 +176,41 @@ docker run -p 8000:8000 \
 ```
 
 The model artifact is mounted at runtime rather than baked into the image so the image does not need to be rebuilt on every retrain.
+
+## Development
+
+### Running tests
+
+```bash
+PYTHONPATH=. pytest
+```
+
+Tests use a synthetic 50-row DataFrame fixture — the real CSV is never required. Coverage report is printed automatically.
+
+### Linting and type checking
+
+```bash
+ruff check src/ tests/ scripts/   # lint
+mypy src/                         # type check
+```
+
+### CI/CD
+
+Every push and pull request to `main` triggers the CI workflow:
+
+| Job | Tool | What it checks |
+|---|---|---|
+| Lint | `ruff` | Style, unused imports, formatting |
+| Type check | `mypy` | Type hint correctness across `src/` |
+| Unit tests | `pytest` | 41 tests across schema, features, model store, pipeline |
+| Docker build | `docker build` | Image builds cleanly |
+
+On merge to `main`, the CD workflow builds and pushes the Docker image to GitHub Container Registry:
+
+```
+ghcr.io/rohit140595/churn-prediction:latest
+ghcr.io/rohit140595/churn-prediction:sha-<git-sha>
+```
 
 ## MLflow
 

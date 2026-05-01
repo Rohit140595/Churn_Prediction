@@ -14,6 +14,8 @@ class BaseModel(ABC):
     cross_val_score) access it by that name.
     """
 
+    _model: Any  # sklearn-compatible estimator; set by each concrete subclass
+
     @abstractmethod
     def fit(self, X: np.ndarray, y: np.ndarray) -> "BaseModel":
         """Fit the model to training data.

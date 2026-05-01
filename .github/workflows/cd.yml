@@ -1,0 +1,65 @@
+# CD — runs only when a commit is pushed (or a PR is merged) to main.
+#
+# Builds the Docker image, tags it with both the git SHA and "latest",
+# and pushes it to GitHub Container Registry (ghcr.io).
+#
+# The image is then available for deployment:
+#   docker pull ghcr.io/rohit140595/churn-prediction:latest
+#
+# NOTE: No cloud deployment step is included here.  Wire up your target
+# platform (ECS, GKE, Fly.io, etc.) by adding a deploy step below and
+# storing the relevant credentials as GitHub Actions secrets.
+
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+
+  build-and-push:
+    name: Build & push to ghcr.io
+    runs-on: ubuntu-latest
+
+    # Required permissions for pushing to GitHub Container Registry
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create empty models_output directory
+        # Directory must exist for the COPY instruction in the Dockerfile.
+        # The actual artifact is not baked in — it is mounted at runtime.
+        run: mkdir -p models_output
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/churn-prediction
+          tags: |
+            # Tag with the full git SHA for precise rollbacks
+            type=sha,format=long
+            # Also tag as "latest" for convenience
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Cache layers from the previous push to speed up builds
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/churn-prediction:latest
+          cache-to: type=inline
