@@ -29,3 +29,24 @@ dependencies = [
 # Discovers src, src.data, src.features, src.models, src.serving, etc.
 where = ["."]
 include = ["src*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes, I = isort
+select = ["E", "F", "I", "W"]
+ignore = [
+    "E501",  # line too long — handled by formatter, not enforced as error
+]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true   # avoids failures for third-party libs without stubs
+warn_unused_ignores = true
+warn_return_any = false         # too noisy for sklearn/pandas heavy code
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

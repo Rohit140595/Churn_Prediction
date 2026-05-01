@@ -6,6 +6,36 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased] — v0.5.0
+
+> Branch: `feat/ci-cd` | PRs: #5 (pending)
+
+### Added
+
+- **CI workflow** (`.github/workflows/ci.yml`) — runs on every push and PR to `main`:
+  - `lint` — `ruff` checks `src/`, `tests/`, `scripts/`
+  - `type-check` — `mypy` validates type hints across `src/`
+  - `test` — `pytest` unit tests with coverage report; `load_raw_data` is patched so no CSV is needed in CI
+  - `docker` — confirms the Docker image builds cleanly on every PR
+- **CD workflow** (`.github/workflows/cd.yml`) — runs on merge to `main`:
+  - Builds the Docker image and tags it with the git SHA and `latest`
+  - Pushes to GitHub Container Registry (`ghcr.io/rohit140595/churn-prediction`)
+  - Uses layer caching from the previous push to speed up builds
+- **Unit test suite** (`tests/`) — 30+ tests across 5 modules:
+  - `test_schema.py` — Pydantic field validation (valid inputs, boundary violations, invalid enums)
+  - `test_engineer.py` — feature engineering correctness, clip guard, input immutability
+  - `test_selector.py` — selector type, k parameter, unfitted state, invalid strategy
+  - `test_model_store.py` — artifact keys, save/load roundtrip, missing file error, nested directory creation
+  - `test_pipeline.py` — end-to-end pipeline with mocked data (all three models, feature selection, save_model)
+- **`requirements-dev.txt`** — `pytest`, `pytest-cov`, `ruff`, `mypy`, `pandas-stubs`
+- **`pyproject.toml`** additions — `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` config sections
+
+### Changed
+
+- `.gitignore` — added `models_output/*.joblib` so the artifact is excluded but the directory is tracked (required for the Docker build context)
+
+---
+
 ## [Unreleased] — v0.4.0
 
 > Branch: `feat/model-packaging` | PRs: #4 (pending)

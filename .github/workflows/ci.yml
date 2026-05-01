@@ -1,0 +1,91 @@
+# CI — runs on every push and pull request targeting main.
+#
+# Jobs:
+#   lint       — ruff checks src/, tests/, scripts/ for style and import issues
+#   type-check — mypy validates type hints across src/
+#   test       — pytest unit tests (no CSV required; load_raw_data is patched)
+#   docker     — confirms the Docker image builds cleanly
+
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  # ── Lint ────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run ruff
+        run: ruff check src/ tests/ scripts/
+
+  # ── Type check ──────────────────────────────────────────────────────────────
+  type-check:
+    name: Type check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install runtime + dev dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run mypy
+        run: mypy src/
+
+  # ── Unit tests ──────────────────────────────────────────────────────────────
+  test:
+    name: Unit tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install runtime + dev dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        # PYTHONPATH lets src.* imports resolve without pip install -e .
+        run: PYTHONPATH=. pytest --cov=src --cov-report=term-missing
+
+  # ── Docker build ────────────────────────────────────────────────────────────
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create empty models_output directory
+        # The Dockerfile COPYs models_output/ — the directory must exist in the
+        # build context even if the artifact isn't present.
+        run: mkdir -p models_output
+
+      - name: Build Docker image
+        run: docker build -t churn-prediction:ci .

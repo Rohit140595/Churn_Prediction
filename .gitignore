@@ -34,6 +34,9 @@ mlartifacts/
 # Environment Variables (Secrets like API keys)
 .env
 
+# Model artifacts (directory is tracked; .joblib files are not)
+models_output/*.joblib
+
 # ds store
 .DS_Store
 
