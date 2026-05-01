@@ -5,8 +5,10 @@
 #
 # Run (mount the model artifact from the host):
 #   docker run -p 8000:8000 \
-#     -v $(pwd)/models_output:/app/models_output:ro \
+#     -v "$(pwd)/models_output:/app/models_output:ro" \
 #     churn-prediction:latest
+#
+# Note: quotes around the -v value are required if the path contains spaces.
 #
 # ⚠  HTTPS NOTE
 # This container serves plain HTTP on port 8000.  In production it MUST sit

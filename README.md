@@ -185,8 +185,9 @@ The server speaks plain HTTP. In production it **must** sit behind an HTTPS-term
 docker build -t churn-prediction:latest .
 
 # Run — mount the model artifact as a read-only volume
+# Quote the -v value — required if the project path contains spaces
 docker run -p 8000:8000 \
-  -v $(pwd)/models_output:/app/models_output:ro \
+  -v "$(pwd)/models_output:/app/models_output:ro" \
   churn-prediction:latest
 ```
 
