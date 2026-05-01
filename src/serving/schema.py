@@ -7,7 +7,7 @@ deploying to production.
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CustomerFeatures(BaseModel):
@@ -102,6 +102,10 @@ class PredictionResponse(BaseModel):
         Semantic version of the deployed artifact.
     """
 
+    # Disable Pydantic's protected-namespace check — model_name/model_version
+    # are intentional field names, not accidental clashes with BaseModel internals.
+    model_config = ConfigDict(protected_namespaces=())
+
     churn_probability: float = Field(
         ..., ge=0.0, le=1.0,
         description="Predicted probability of churn (0–1).",
@@ -137,6 +141,8 @@ class ModelInfo(BaseModel):
         Held-out evaluation metrics recorded at training time.
     """
 
+    model_config = ConfigDict(protected_namespaces=())
+
     model_name: str
     model_version: str
     trained_at: str
@@ -147,6 +153,8 @@ class ModelInfo(BaseModel):
 
 class HealthResponse(BaseModel):
     """Response schema for the ``GET /health`` endpoint."""
+
+    model_config = ConfigDict(protected_namespaces=())
 
     status: str = Field(..., description="'ok' when the service is ready.")
     model_loaded: bool = Field(..., description="True when the model artifact is loaded.")
