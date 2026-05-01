@@ -6,9 +6,9 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased] — v0.5.0
+## [0.5.0] — 2026-05-01
 
-> Branch: `feat/ci-cd` | PRs: #5 (pending)
+> PR #5: [feat: add CI/CD workflows and unit test suite](https://github.com/Rohit140595/Churn_Prediction/pull/5)
 
 ### Added
 
