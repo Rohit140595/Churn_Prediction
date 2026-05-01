@@ -40,6 +40,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # PYTHONPATH=/app means Python resolves `from src.x import y` directly from
 # /app/src without needing an editable install or sys.path manipulation.
 COPY src/ src/
+COPY models_output/ models_output/
 
 # ── Model artifact ────────────────────────────────────────────────────────────
 # The artifact (models_output/churn_model.joblib) is intentionally NOT baked
