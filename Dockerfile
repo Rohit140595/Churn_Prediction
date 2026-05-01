@@ -24,6 +24,8 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1
 # Prevents Python from writing .pyc files into the image layer
 ENV PYTHONDONTWRITEBYTECODE=1
+# Makes src.* imports resolve from /app without needing pip install -e .
+ENV PYTHONPATH=/app
 
 WORKDIR /app
 
@@ -32,13 +34,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ── Install the package ───────────────────────────────────────────────────────
-# Copy source and package metadata, then install in editable mode so that
-# all `src.*` imports resolve correctly without sys.path hacks.
-COPY pyproject.toml .
+# ── Copy source ───────────────────────────────────────────────────────────────
+# PYTHONPATH=/app means Python resolves `from src.x import y` directly from
+# /app/src without needing an editable install or sys.path manipulation.
 COPY src/ src/
-
-RUN pip install --no-cache-dir -e .
 
 # ── Model artifact ────────────────────────────────────────────────────────────
 # The artifact (models_output/churn_model.joblib) is intentionally NOT baked
