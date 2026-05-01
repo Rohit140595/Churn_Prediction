@@ -17,6 +17,12 @@ optuna==4.8.0
 # Experiment Tracking & MLOps
 mlflow==2.10.2
 
+# Model Serving
+fastapi==0.110.3
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+joblib==1.4.0
+
 # Visualization & Utilities
 matplotlib==3.8.4
 seaborn==0.13.2

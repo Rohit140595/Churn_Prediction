@@ -1,0 +1,31 @@
+# Version control
+.git
+.gitignore
+
+# Python cache and virtual environments
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+*.egg-info/
+
+# Data — never bake raw customer data into the image
+data/
+
+# Model artifacts — mounted as a volume at runtime, not baked in
+models_output/
+
+# MLflow tracking data — belongs on the host, not in the image
+mlruns/
+
+# Development and analysis files not needed at serving time
+analysis/
+.claude/
+.DS_Store
+
+# Test and CI artefacts
+.pytest_cache/
+htmlcov/
+.coverage
