@@ -12,5 +12,6 @@ ruff==0.4.4               # fast linter + formatter (replaces flake8, isort)
 mypy==1.10.0
 pandas-stubs==2.2.1.240316  # type stubs for pandas
 
-# Required by mlflow and other transitive deps; not always bundled with Python
-setuptools>=68
+# Provides pkg_resources; pinned below 71 to avoid _distutils_hack assertion
+# failure on Python 3.10 / macOS system framework builds
+setuptools==65.5.0
