@@ -35,5 +35,6 @@ def log_experiment(
     with mlflow.start_run(run_name=model_name) as run:
         mlflow.log_params(params)
         mlflow.log_metrics(metrics)
+        # artifact_path sets the subfolder name within the run's artifact store
         mlflow.sklearn.log_model(estimator, artifact_path="model")
         return run.info.run_id

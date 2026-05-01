@@ -1,0 +1,78 @@
+# Changelog
+
+All notable changes to this project are documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [Unreleased] — v0.3.0
+
+> Branch: `feat/feature-selection` | PRs: #3 (pending)
+
+### Added
+
+- **Feature selection** (`src/features/selector.py`) — `build_selector()` with two strategies:
+  - `importance`: `SelectFromModel` (RandomForest, threshold=mean) — data-driven feature count
+  - `kbest`: `SelectKBest` (ANOVA F-score) — fixed top-k features
+- **Optuna hyperparameter tuning** (`src/tuning/tuner.py`) — TPE sampler with 3-fold stratified CV; preprocessor rebuilt per fold to prevent leakage. Search spaces for all three models.
+- **Campaign ROI business metric** (`src/evaluation/business_metrics.py`):
+  - `compute_campaign_roi()` — net value vs outreach cost at a fixed threshold
+  - `find_optimal_threshold()` — sweeps 100 thresholds (0.05–0.95) to maximise ROI
+  - `plot_roi_curve()` — ROI vs threshold with vertical line at the optimum
+- **`--tune`**, **`--n-trials`**, **`--feature-selection`**, **`--feature-selection-k`** CLI flags added to `scripts/train.py`
+- **Inline comments** throughout all source files — WHY-focused constraints (leakage prevention, division-by-zero guards, XGBoost 2.0 compatibility) and readability comments (section headers, formula breakdowns, inline annotations)
+
+### Changed
+
+- `src/data/preprocessor.py` — replaced the combined `split_and_preprocess()` wrapper with separate `split_data()` and `preprocess()` functions; tuner now receives raw DataFrames without triggering a second split
+- `src/config.py` — added `colsample_bytree=0.8` to `DEFAULT_PARAMS["xgboost"]`; added business assumption constants (`REVENUE_PER_RETAINED_CUSTOMER`, `COST_PER_OUTREACH`, `RETENTION_SUCCESS_RATE`); added section headers
+- `src/models/xgboost_model.py` — added `colsample_bytree` constructor parameter; set `eval_metric="logloss"` explicitly to silence XGBoost 2.0 deprecation warning
+- `README.md` — added feature selection and tuning usage, hyperparameter search space table, updated sample output with tuning results, added Campaign ROI section with formula
+
+### Removed
+
+- `cross_validate_model()` from `src/evaluation/metrics.py` — CV now lives inside Optuna trials; standalone reporting was redundant
+- `AgeGroup` engineered feature from `src/features/engineer.py` — redundant with the continuous `Age` column
+
+---
+
+## [0.2.0] — 2026-04-24
+
+> PR #2: [docs: update README with project structure and usage](https://github.com/Rohit140595/Churn_Prediction/pull/2)
+
+### Added
+
+- `README.md` — full project documentation: directory tree, setup instructions, training commands, baseline model results table, MLflow usage, and pipeline API example
+
+---
+
+## [0.1.0] — 2026-04-24
+
+> PR #1: [feat: add modular ML pipeline for churn prediction](https://github.com/Rohit140595/Churn_Prediction/pull/1)
+
+### Added
+
+- **Project scaffold** — `.gitignore` (excludes `data/`, `venv/`, `__pycache__`, MLflow artifacts, notebook checkpoints) and `requirements.txt` (pinned dependencies)
+- **EDA notebook** (`analysis/EDA.ipynb`) — churn rate summary, correlation heatmap, univariate distribution plots, and multi-feature comparison plots
+- **`src/config.py`** — single source of truth for paths, feature lists, random state, test size, and default hyperparameters
+- **Data layer** (`src/data/`) — `load_raw_data()` drops identifier columns (`RowNumber`, `CustomerId`, `Surname`); `split_and_preprocess()` does stratified 80/20 split with `StandardScaler` + `OneHotEncoder` fit on training folds only
+- **Feature engineering** (`src/features/engineer.py`) — `BalancePerProduct` (balance ÷ product count, floor at 1) and `ActiveProducts` (IsActiveMember × NumOfProducts)
+- **Model wrappers** (`src/models/`) — `BaseModel` ABC enforcing `fit`, `predict`, `predict_proba`, `get_params`; concrete implementations for `LogisticRegressionModel`, `RandomForestModel`, `XGBoostModel`; `get_model()` registry factory
+- **Evaluation** (`src/evaluation/metrics.py`) — `compute_metrics()` (accuracy, ROC-AUC, F1, precision, recall), `cross_validate_model()` (5-fold stratified CV with preprocessing per fold), `plot_roc_curve()`, `plot_confusion_matrix()`
+- **MLflow tracking** (`src/tracking/mlflow_tracker.py`) — `log_experiment()` logs params, metrics, and model artifact per run
+- **End-to-end pipeline** (`src/pipeline.py`) — `run_pipeline()` orchestrates all steps and returns a results dict
+- **CLI** (`scripts/train.py`) — `--model`, `--experiment-name`, `--no-tracking` flags
+
+### Baseline results (XGBoost, default hyperparameters)
+
+| | Accuracy | ROC-AUC | F1 |
+|---|---|---|---|
+| CV (5-fold, mean ± std) | 0.8645 ± 0.0045 | 0.8663 ± 0.0048 | 0.5939 ± 0.0180 |
+| Test set | 0.8705 | 0.8649 | 0.6058 |
+
+---
+
+## [0.0.0] — Initial commit
+
+- Repository initialised with empty project structure

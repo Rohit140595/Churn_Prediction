@@ -11,6 +11,9 @@ xgboost==2.0.3
 lightgbm==4.3.0
 catboost==1.2.7
 
+# Hyperparameter Tuning
+optuna==4.8.0
+
 # Experiment Tracking & MLOps
 mlflow==2.10.2
 

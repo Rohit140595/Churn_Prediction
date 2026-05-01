@@ -1,9 +1,8 @@
-from typing import Any, Optional
+from typing import Optional
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     RocCurveDisplay,
@@ -13,63 +12,6 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold
-from sklearn.model_selection import cross_validate as sk_cross_validate
-from sklearn.pipeline import Pipeline as SKPipeline
-
-from src.config import RANDOM_STATE
-
-
-def cross_validate_model(
-    X: pd.DataFrame,
-    y: np.ndarray,
-    estimator: Any,
-    numerical_features: list[str],
-    categorical_features: list[str],
-    cv: int = 5,
-) -> dict[str, np.ndarray]:
-    """Run stratified k-fold cross-validation with preprocessing inside each fold.
-
-    Wraps the preprocessor and estimator in an sklearn ``Pipeline`` so that
-    scaling and encoding are re-fit on each training fold, preventing leakage.
-
-    Parameters
-    ----------
-    X : pd.DataFrame of shape (n_samples, n_features)
-        Full feature DataFrame (before any train/test split).
-    y : np.ndarray of shape (n_samples,)
-        Binary target labels.
-    estimator : Any
-        Unfitted sklearn-compatible estimator.
-    numerical_features : list[str]
-        Columns to pass through ``StandardScaler``.
-    categorical_features : list[str]
-        Columns to pass through ``OneHotEncoder``.
-    cv : int, optional
-        Number of stratified folds, by default 5.
-
-    Returns
-    -------
-    dict[str, np.ndarray]
-        Keys: ``accuracy``, ``roc_auc``, ``f1``, ``precision``, ``recall``.
-        Each value is an array of per-fold scores.
-    """
-    from src.data.preprocessor import build_preprocessor
-
-    preprocessor = build_preprocessor(numerical_features, categorical_features)
-    pipe = SKPipeline([("preprocessor", preprocessor), ("model", estimator)])
-    cv_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
-    scores = sk_cross_validate(
-        pipe,
-        X,
-        y,
-        cv=cv_strategy,
-        scoring=["accuracy", "roc_auc", "f1", "precision", "recall"],
-    )
-    return {
-        metric: scores[f"test_{metric}"]
-        for metric in ["accuracy", "roc_auc", "f1", "precision", "recall"]
-    }
 
 
 def compute_metrics(
@@ -94,7 +36,7 @@ def compute_metrics(
         Keys: ``accuracy``, ``roc_auc``, ``f1``, ``precision``, ``recall``.
     """
     if y_proba.ndim == 2:
-        y_proba = y_proba[:, 1]
+        y_proba = y_proba[:, 1]  # column 1 is the positive-class (churn) probability
     return {
         "accuracy": accuracy_score(y_true, y_pred),
         "roc_auc": roc_auc_score(y_true, y_proba),
@@ -129,7 +71,7 @@ def plot_roc_curve(
         Axes containing the ROC curve.
     """
     if y_proba.ndim == 2:
-        y_proba = y_proba[:, 1]
+        y_proba = y_proba[:, 1]  # extract positive-class probabilities
     if ax is None:
         _, ax = plt.subplots()
     RocCurveDisplay.from_predictions(y_true, y_proba, name=model_name, ax=ax)
